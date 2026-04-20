@@ -36,10 +36,6 @@
             <xpath expr="//field[@name='partner_id'][2]" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
-            <field name="counterpart_currency_id" position="attributes">
-                <attribute name="readonly">1</attribute>
-                <attribute name="force_save">1</attribute>
-            </field>
             <button name="action_draft" position="attributes">
                 <attribute name="groups">base.group_no_one</attribute>
                 <attribute name="confirm">IMPORTANT: Linked draft validation must be done from main receipt. Draft validation of a linked payment is only used for corrections and advanced use cases. Are you sure you want to continue?</attribute>
