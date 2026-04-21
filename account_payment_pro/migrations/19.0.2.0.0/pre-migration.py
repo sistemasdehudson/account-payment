@@ -55,3 +55,19 @@ def migrate(cr, version):
                 _logger.info(f"  ✓ {module}.{xmlid} corregida (id {view_id})")
         else:
             _logger.info(f"  - {module}.{xmlid} ya está limpia")
+
+    # Desactivar vista de account_accountant_ux si tiene campo obsoleto
+    # (se limpia en el post-migrate de account_accountant_ux y se reactiva)
+    # Este fix puede removerse cuando el daily backup ya tenga la vista limpia
+    cr.execute("""
+        UPDATE ir_ui_view SET active = False
+        WHERE id IN (
+            SELECT res_id FROM ir_model_data
+            WHERE module = 'account_accountant_ux'
+              AND name = 'res_config_settings_view_form'
+              AND model = 'ir.ui.view'
+        )
+        AND arch_db::text LIKE '%use_company_currency_on_followup%'
+    """)
+    if cr.rowcount > 0:
+        _logger.info("  ✓ account_accountant_ux.res_config_settings_view_form desactivada temporalmente")
