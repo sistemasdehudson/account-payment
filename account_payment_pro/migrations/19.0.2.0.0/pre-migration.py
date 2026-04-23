@@ -11,6 +11,8 @@ def migrate(cr, version):
     Elimina campos obsoletos del arch_db de vistas de pagos:
     - payment_total
     - payment_method_description
+    Y limpieza global de <setting> obsoletos en res.config.settings
+    que causan fallo al validar res_company_setting.xml al cargar el módulo.
     """
     _logger.info("account_payment_pro pre-migrate: limpiando campos obsoletos")
 
@@ -71,3 +73,32 @@ def migrate(cr, version):
     """)
     if cr.rowcount > 0:
         _logger.info("  ✓ account_accountant_ux.res_config_settings_view_form desactivada temporalmente")
+
+    # -------------------------------------------------------------------
+    # Limpieza global de <setting> obsoletos en res.config.settings.
+    # Acá porque account_payment_pro es el módulo cuyo XML (res_company_setting.xml)
+    # falla al validar la vista combinada si estas <setting> están en cualquier
+    # vista heredada. Busca por contenido del arch_db, sin depender de IDs
+    # hardcodeados ni de xmlids específicos.
+    # -------------------------------------------------------------------
+    _logger.info("account_payment_pro pre-migrate: limpieza global de <setting> obsoletos")
+
+    settings_obsoletos = [
+        'use_search_filter_amount',
+        'company_currency_on_follow_up',
+    ]
+
+    for setting_id in settings_obsoletos:
+        cr.execute("""
+            UPDATE ir_ui_view
+            SET arch_db = CAST(
+                regexp_replace(
+                    arch_db::text,
+                    '<setting id="' || %s || '"[^<]*(<[^/][^>]*>[^<]*</[^>]*>|<[^/][^>]*/?>)*[^<]*</setting>',
+                    '',
+                    'g'
+                ) AS jsonb
+            )
+            WHERE arch_db::text LIKE '%%' || %s || '%%'
+        """, (setting_id, setting_id))
+        _logger.info(f"  ✓ {setting_id}: {cr.rowcount} vistas procesadas")
