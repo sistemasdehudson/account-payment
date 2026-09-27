@@ -145,7 +145,12 @@ class AccountPayment(models.Model):
                 # even though the payment method line is for checks.
                 # To fix this, we replicate the same behavior as in Odoo's "transfer check" wizard by setting the proper payment method.
                 # An explicit choice by the user wins over this default.
-                correct_dest_payment_method = rec.destination_payment_method_line_id or (
+                dest_method = (
+                    rec.destination_payment_method_line_id
+                    if "destination_payment_method_line_id" in rec._fields
+                    else rec.env["account.payment.method.line"]
+                )
+                correct_dest_payment_method = dest_method or (
                     rec.destination_journal_id.inbound_payment_method_line_ids.filtered(
                         lambda x: x.code == "in_third_party_checks"
                     )
